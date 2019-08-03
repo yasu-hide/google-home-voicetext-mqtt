@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: google-home-voicetext-mqtt
+spec:
+  selector:
+    matchLabels:
+      app: google-home-voicetext-mqtt
+  template:
+    metadata:
+      labels:
+        app: google-home-voicetext-mqtt
+    spec:
+      containers:
+      - name: google-home-voicetext-mqtt
+        image: vet5lqplpecmpnqb/google-home-voicetext-mqtt:latest
+        resources:
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+        envFrom:
+        - configMapRef:
+            name: google-home-voicetext-mqtt
+        - secretRef:
+            name: google-home-voicetext-mqtt
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: google-home-voicetext-mqtt
+data:
+  TZ: 'JST-9'
+  SERVER_ADDRESS: 'google-home-voicetext-server'
+  SERVER_PORT: '8080'
+  DEVICE_ADDRESS: ''
+  MQTT_ADDRESS: 'mqtt://mqtt.beebotte.com'
+  MQTT_TOPIC: 'Google_Home_Voicetext/message'
