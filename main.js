@@ -30,10 +30,15 @@ const options = {
     form: {}
 };
 
-const mqttclient = mqtt.connect(process.env["MQTT_ADDRESS"], {
-    username: process.env["MQTT_USER"],
-    password: process.env["MQTT_PASS"]
-});
+const mqttopt = {};
+if(process.env["MQTT_USER"]) {
+    mqttopt.username = process.env["MQTT_USER"];
+}
+if(process.env["MQTT_PASS"]) {
+    mqttopt.password = process.env["MQTT_PASS"];
+}
+const mqttclient = mqtt.connect(process.env["MQTT_ADDRESS"], mqttopt);
+
 mqttclient.on('connect', () => {
     console.log('subscriber connected.', process.env["MQTT_ADDRESS"]);
     mqttclient.subscribe(process.env["MQTT_TOPIC"], (err, granted) => {
