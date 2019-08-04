@@ -32,7 +32,7 @@ metadata:
 data:
   TZ: 'JST-9'
   SERVER_ADDRESS: 'google-home-voicetext-server'
-  SERVER_PORT: '8080'
+  SERVER_PORT: '80'
   DEVICE_ADDRESS: ''
   MQTT_ADDRESS: 'mqtt://mqtt.beebotte.com'
   MQTT_TOPIC: 'Google_Home_Voicetext/message'
