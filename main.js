@@ -30,14 +30,23 @@ const options = {
     form: {}
 };
 
+if(!process.env["MQTT_ADDRESS"].startsWith('mqtt://')) {
+    throw new Error("MQTT_ADDRESS should start with 'mqtt://'.");
+}
+const mqtturl = new URL(process.env["MQTT_ADDRESS"]);
+const mqtt_user = process.env["MQTT_USER"] || mqtturl.username;
+const mqtt_pass = process.env["MQTT_PASS"] || mqtturl.password;
+mqtturl.username = '';
+mqtturl.password = '';
+
 const mqttopt = {};
-if(process.env["MQTT_USER"]) {
-    mqttopt.username = process.env["MQTT_USER"];
+if(mqtt_user) {
+    mqttopt.username = mqtt_user;
 }
-if(process.env["MQTT_PASS"]) {
-    mqttopt.password = process.env["MQTT_PASS"];
+if(mqtt_pass) {
+    mqttopt.password = mqtt_pass;
 }
-const mqttclient = mqtt.connect(process.env["MQTT_ADDRESS"], mqttopt);
+const mqttclient = mqtt.connect(mqtturl.toString(), mqttopt);
 
 mqttclient.on('connect', () => {
     console.log('subscriber connected.', process.env["MQTT_ADDRESS"]);

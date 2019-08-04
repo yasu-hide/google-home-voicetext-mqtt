@@ -21,6 +21,8 @@ export DEVICE_ADDRESS=192.168.20.200
 ## MQTT_ADDRESS (必須)
 MQTTブローカーのアドレスです。
 
+`mqtt://`で始める必要があります。
+
 ```
 export MQTT_ADDRESS=mqtt://mqtt.beebotte.com
 ```
