@@ -22,10 +22,10 @@ const endpointUrl = url.format({
     port: process.env["SERVER_PORT"] || 8080,
     hostname: process.env["SERVER_ADDRESS"],
     pathname: process.env["DEVICE_ADDRESS"]
-});
+}).toString();
 
 const options = {
-    url: endpointUrl.toString(),
+    url: endpointUrl,
     method: 'POST',
     form: {}
 };
