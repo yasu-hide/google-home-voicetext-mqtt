@@ -1,0 +1,15 @@
+---
+version: "3.1"
+services:
+  google-home-voicetext-mqtt:
+    image: vet5lqplpecmpnqb/google-home-voicetext-mqtt
+    networks:
+      - bridge
+    env_file:
+      - .env
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+networks:
+  bridge:
