@@ -1,4 +1,4 @@
-FROM node:16.19-bullseye-slim
+FROM node:16.20.1-bullseye-slim
 WORKDIR /tmp
 COPY package.json /tmp/package.json
 RUN npm config set unsafe-perm true \
