@@ -1,6 +1,4 @@
 'use strict'
-require("date-utils");
-const request = require('request-promise');
 const url = require("url");
 const mqtt = require("mqtt");
 
@@ -23,12 +21,6 @@ const endpointUrl = url.format({
     hostname: process.env["SERVER_ADDRESS"],
     pathname: process.env["DEVICE_ADDRESS"]
 }).toString();
-
-const options = {
-    url: endpointUrl,
-    method: 'POST',
-    form: {}
-};
 
 if(!process.env["MQTT_ADDRESS"].startsWith('mqtt://')) {
     throw new Error("MQTT_ADDRESS should start with 'mqtt://'.");
@@ -56,11 +48,20 @@ mqttclient.on('connect', () => {
 });
 
 mqttclient.on('message', (topic, message) => {
-    options.form = {
+    const body = new URLSearchParams({
         'text': JSON.parse(message).data.toString()
-    };
-    request(options).then((res) => {
-        console.log(res);
+    });
+    fetch(endpointUrl, {
+        method: 'POST',
+        body
+    }).then(async (res) => {
+        const text = await res.text();
+        if(!res.ok) {
+            throw new Error(`HTTP ${res.status} ${res.statusText}: ${text}`);
+        }
+        return text;
+    }).then((text) => {
+        console.log(text);
     }).catch((err) => {
         console.error(err);
     });
