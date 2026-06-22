@@ -1,4 +1,7 @@
+[![codecov](https://codecov.io/github/yasu-hide/google-home-voicetext-mqtt/graph/badge.svg?token=XIDT45O4NG)](https://codecov.io/github/yasu-hide/google-home-voicetext-mqtt)
+
 # google-home-voicetext-mqtt
+
 MQTTブローカーに書き込んだ内容を、Google Homeに喋らせる仕組みです。
 
 [google-home-voicetext-server](https://github.com/yasu-hide/google-home-voicetext-server)と合わせて使用できます。
