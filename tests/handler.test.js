@@ -1,6 +1,6 @@
 'use strict';
 
-const { validateEnv, buildEndpointUrl, parseMqttAddress } = require('../lib/handler');
+const { validateEnv, buildEndpointUrl, parseMqttAddress, handleMessage } = require('../lib/handler');
 
 describe('validateEnv', () => {
     beforeEach(() => {
@@ -112,5 +112,110 @@ describe('parseMqttAddress', () => {
         vi.stubEnv('MQTT_USER', 'bob');
         const { options } = parseMqttAddress();
         expect(options).toEqual({ username: 'bob', password: 'secret' });
+    });
+});
+
+describe('handleMessage', () => {
+    beforeEach(() => {
+        vi.spyOn(console, 'log').mockImplementation(() => {});
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+        delete global.fetch;
+    });
+
+    test('正常系: JSON を解析し正しい URL・メソッド・body で fetch を呼ぶ', async () => {
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: true,
+            text: vi.fn().mockResolvedValue('done'),
+        });
+        global.fetch = mockFetch;
+
+        await handleMessage(JSON.stringify({ data: 'こんにちは' }), 'http://localhost:8080/dev');
+
+        expect(mockFetch).toHaveBeenCalledWith(
+            'http://localhost:8080/dev',
+            expect.objectContaining({ method: 'POST', body: expect.any(URLSearchParams) })
+        );
+        expect(mockFetch.mock.calls[0][1].body.get('text')).toBe('こんにちは');
+    });
+
+    test('正常系: レスポンス本文を console.log する', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            text: vi.fn().mockResolvedValue('done'),
+        });
+        await handleMessage(JSON.stringify({ data: 'hi' }), 'http://localhost:8080/dev');
+        expect(console.log).toHaveBeenCalledWith('done');
+    });
+
+    test('非 ok レスポンス: throw を catch して console.error を呼ぶ', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error',
+            text: vi.fn().mockResolvedValue('boom'),
+        });
+        await handleMessage(JSON.stringify({ data: 'hi' }), 'http://localhost:8080/dev');
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+        expect(console.log).not.toHaveBeenCalled();
+    });
+
+    test('ネットワークエラー: catch して console.error を呼ぶ', async () => {
+        global.fetch = vi.fn().mockRejectedValue(new Error('network error'));
+        await handleMessage(JSON.stringify({ data: 'hi' }), 'http://localhost:8080/dev');
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+        expect(console.log).not.toHaveBeenCalled();
+    });
+
+    test('data が数値でも toString() で文字列化して送る', async () => {
+        const mf = vi.fn().mockResolvedValue({ ok: true, text: vi.fn().mockResolvedValue('') });
+        global.fetch = mf;
+        await handleMessage(JSON.stringify({ data: 123 }), 'http://localhost:8080/dev');
+        expect(mf.mock.calls[0][1].body.get('text')).toBe('123');
+    });
+
+    // CEOレビュー/Codex指摘: 不正メッセージ・追加エッジケース
+    test('不正なJSON: fetch は呼ばれず console.error を呼ぶ', async () => {
+        const mf = vi.fn();
+        global.fetch = mf;
+        await handleMessage('not-json', 'http://localhost:8080/dev');
+        expect(mf).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    test('data フィールド欠如: console.error を呼び fetch は呼ばれない', async () => {
+        const mf = vi.fn();
+        global.fetch = mf;
+        await handleMessage(JSON.stringify({ foo: 'bar' }), 'http://localhost:8080/dev');
+        expect(mf).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    test('data が null: console.error を呼び fetch は呼ばれない', async () => {
+        const mf = vi.fn();
+        global.fetch = mf;
+        await handleMessage(JSON.stringify({ data: null }), 'http://localhost:8080/dev');
+        expect(mf).not.toHaveBeenCalled();
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+    });
+
+    test('data が object: toString() で "[object Object]" を送る', async () => {
+        const mf = vi.fn().mockResolvedValue({ ok: true, text: vi.fn().mockResolvedValue('') });
+        global.fetch = mf;
+        await handleMessage(JSON.stringify({ data: { a: 1 } }), 'http://localhost:8080/dev');
+        expect(mf.mock.calls[0][1].body.get('text')).toBe('[object Object]');
+    });
+
+    test('res.text() が reject: catch して console.error を呼ぶ', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            text: vi.fn().mockRejectedValue(new Error('read error')),
+        });
+        await handleMessage(JSON.stringify({ data: 'hi' }), 'http://localhost:8080/dev');
+        expect(console.error).toHaveBeenCalledWith(expect.any(Error));
+        expect(console.log).not.toHaveBeenCalled();
     });
 });
