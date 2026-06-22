@@ -1,6 +1,6 @@
 'use strict';
 
-const { validateEnv, buildEndpointUrl } = require('../lib/handler');
+const { validateEnv, buildEndpointUrl, parseMqttAddress } = require('../lib/handler');
 
 describe('validateEnv', () => {
     beforeEach(() => {
@@ -62,5 +62,55 @@ describe('buildEndpointUrl', () => {
         vi.stubEnv('DEVICE_ADDRESS', 'device.local');
         vi.stubEnv('SERVER_PORT', '12080');
         expect(buildEndpointUrl()).toBe('http://google-home-voicetext-server:12080/device.local');
+    });
+});
+
+describe('parseMqttAddress', () => {
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    test('mqtt:// で始まらない場合はエラーをスロー', () => {
+        vi.stubEnv('MQTT_ADDRESS', 'tcp://broker.local');
+        expect(() => parseMqttAddress()).toThrow("MQTT_ADDRESS should start with 'mqtt://'.");
+    });
+
+    test('資格情報なし: options は空、url はそのまま', () => {
+        vi.stubEnv('MQTT_ADDRESS', 'mqtt://broker.local:1883');
+        const { url, options } = parseMqttAddress();
+        expect(url).toBe('mqtt://broker.local:1883');
+        expect(options).toEqual({});
+    });
+
+    test('URL 埋め込みの資格情報: options に反映し url から剥がす', () => {
+        vi.stubEnv('MQTT_ADDRESS', 'mqtt://alice:secret@broker.local:1883');
+        const { url, options } = parseMqttAddress();
+        expect(options).toEqual({ username: 'alice', password: 'secret' });
+        expect(url).toBe('mqtt://broker.local:1883');
+        expect(url).not.toContain('alice');
+        expect(url).not.toContain('secret');
+    });
+
+    test('MQTT_USER / MQTT_PASS env が URL 埋め込みより優先される', () => {
+        vi.stubEnv('MQTT_ADDRESS', 'mqtt://alice:secret@broker.local:1883');
+        vi.stubEnv('MQTT_USER', 'bob');
+        vi.stubEnv('MQTT_PASS', 'token');
+        const { options } = parseMqttAddress();
+        expect(options).toEqual({ username: 'bob', password: 'token' });
+    });
+
+    test('username のみ指定: options に username だけ入る', () => {
+        vi.stubEnv('MQTT_ADDRESS', 'mqtt://broker.local:1883');
+        vi.stubEnv('MQTT_USER', 'bob');
+        const { options } = parseMqttAddress();
+        expect(options).toEqual({ username: 'bob' });
+    });
+
+    // Codex指摘: URL に user:pass、env に MQTT_USER だけ → 各フィールド独立にフォールバック
+    test('URLにuser:pass・envにMQTT_USERのみ: username=env, password=URL', () => {
+        vi.stubEnv('MQTT_ADDRESS', 'mqtt://alice:secret@broker.local:1883');
+        vi.stubEnv('MQTT_USER', 'bob');
+        const { options } = parseMqttAddress();
+        expect(options).toEqual({ username: 'bob', password: 'secret' });
     });
 });
