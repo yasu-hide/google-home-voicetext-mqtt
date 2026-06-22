@@ -4,6 +4,7 @@ WORKDIR /app
 COPY package.json package-lock.json /app/
 RUN npm ci --omit=dev
 COPY main.js /app/main.js
+COPY lib/ /app/lib/
 
 ENTRYPOINT ["node"]
 CMD ["/app/main.js"]
