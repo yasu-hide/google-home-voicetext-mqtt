@@ -1,10 +1,9 @@
-FROM node:16.20.1-bullseye-slim
-WORKDIR /tmp
-COPY package.json /tmp/package.json
-RUN npm config set unsafe-perm true \
-    && npm update -y -g npm \
-    && npm install \
-    && npm config set unsafe-perm false
-COPY main.js /tmp/main.js
+FROM dhi.io/node:22-alpine-sfw-dev
+
+WORKDIR /app
+COPY package.json package-lock.json /app/
+RUN npm ci --omit=dev
+COPY main.js /app/main.js
+
 ENTRYPOINT ["node"]
-CMD ["/tmp/main.js"]
+CMD ["/app/main.js"]
