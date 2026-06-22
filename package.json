@@ -4,11 +4,16 @@
     "description": "",
     "main": "main.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "vitest run",
+        "coverage": "vitest run --coverage"
     },
     "author": "yasuhide",
     "license": "MIT",
     "dependencies": {
         "mqtt": "^5.3.5"
+    },
+    "devDependencies": {
+        "@vitest/coverage-v8": "^4.1.9",
+        "vitest": "^4.1.9"
     }
 }
