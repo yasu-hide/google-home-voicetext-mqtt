@@ -10,7 +10,7 @@
     "author": "yasuhide",
     "license": "MIT",
     "dependencies": {
-        "mqtt": "^5.15.2"
+        "mqtt": "^5.16.0"
     },
     "devDependencies": {
         "@vitest/coverage-v8": "^5.0.0",
